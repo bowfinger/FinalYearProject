@@ -5,21 +5,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfPoint;
+import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
 
-public class ComputeContours implements Function<Mat, List<MatOfPoint>>{
-    private List<MatOfPoint> contours;
-    private Mat hierarchy;
+public class ComputeContours implements Function<Mat, Mat>{
 
-    public ComputeContours(){
-        contours = new ArrayList<MatOfPoint>();
-        hierarchy = new Mat();
-    }
+    private static final double THRESHOLD = 25;
+    private static final double MAX_THRESHOLD = 255;
+    private static final double BLUR_SIZE = 21;
+    private static final double MIN_CONTOUR_AREA = 2000;
 
     @Override
-    public List<MatOfPoint> apply(Mat t) {
+    public Mat apply(Mat t) {
 
         Mat grey = new Mat();
         Mat hierarchy = new Mat();
@@ -54,10 +51,9 @@ public class ComputeContours implements Function<Mat, List<MatOfPoint>>{
         //a list for only selected contours
         List<MatOfPoint> SelectedContours = new ArrayList<MatOfPoint>(200);
 
-        for(int i=0; i < contours.size(); i++)
-        {
-            if (Imgproc.contourArea(contours.get(i)) > MIN_CONTOUR_AREA){
-                SelectedContours.add(contours.get(i));
+        for (MatOfPoint contour : contours) {
+            if (Imgproc.contourArea(contour) > MIN_CONTOUR_AREA) {
+                SelectedContours.add(contour);
             }
         }
 

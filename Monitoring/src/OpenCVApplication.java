@@ -1,13 +1,10 @@
 /**
  * Created by Jamie on 06/11/2015.
  */
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.stream.Collector;
-import java.util.stream.Stream;
-
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
+
+import java.util.stream.Stream;
 
 public class OpenCVApplication {
 
@@ -15,7 +12,7 @@ public class OpenCVApplication {
     private Preprocessor pp;
     private FrameSupplier supplier;
     private Stream<Mat> frameStream;
-    private Mat initialFrame;
+    private static Mat initialFrame;
 
     public OpenCVApplication(AppMode mode){
         //load OpenCV lib
@@ -23,7 +20,7 @@ public class OpenCVApplication {
 
         //Instantiate variables
         supplier = new FrameSupplier();
-        frame = new Mat();
+        initialFrame = new Mat();
 
         if(mode == AppMode.DEBUG){
             //build panels and display video streams
