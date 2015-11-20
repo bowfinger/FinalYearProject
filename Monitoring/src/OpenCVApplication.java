@@ -15,7 +15,7 @@ public class OpenCVApplication {
     private Preprocessor pp;
     private FrameSupplier supplier;
     private Stream<Mat> frameStream;
-    private Mat frame;
+    private Mat initialFrame;
 
     public OpenCVApplication(AppMode mode){
         //load OpenCV lib
@@ -36,5 +36,24 @@ public class OpenCVApplication {
         //set stream
         frameStream = Stream.generate(supplier);
 
+        //grab initial frame
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        initialFrame = new Preprocessor().apply(supplier.get());
+
+        //show in other window
+        //screen.filterPanel.display(initialFrame);
+
+        frameStream.map(new Preprocessor())
+                .map(new ComputeContours())
+                .forEach(x -> screen.mainPanel.display(x));
+    }
+
+    public static Mat getInitialFrame(){
+        return initialFrame;
     }
 }
