@@ -8,6 +8,6 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="Gradle: org.bytedeco.javacpp-presets:opencv:3.0.0-1.0" level="project" />
-    <orderEntry type="library" name="opencv-300" level="project" />
+    <orderEntry type="library" exported="" name="opencv-300" level="application" />
   </component>
 </module>

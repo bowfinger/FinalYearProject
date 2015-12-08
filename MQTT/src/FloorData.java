@@ -38,6 +38,7 @@ public class FloorData {
         this.Count = count;
     }
 
+    // Used for testing/console output
     @Override
     public String toString() {
         return ("----- Floor data -----" + "" +

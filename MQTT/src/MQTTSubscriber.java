@@ -5,21 +5,30 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
  * Created by Jamie on 13/11/2015.
  */
 public class MQTTSubscriber {
+    private static final int QOS = 1;
+
     public static void main(String[] args) throws InterruptedException {
 
         //set up interface for credentials
-        MQTTInterface i = new MQTTInterface();
+        // use environment variables instead here for security
+        //MQTTInterface i = new MQTTInterface();
+
+        String broker = System.getenv("MQTT_BROKER");
+        String username = System.getenv("MQTT_USERNAME");
+        String pass = System.getenv("MQTT_PASS");
+
+        System.out.println(System.getenv());
 
         //MQTT client id to use for the device. "" will generate a client id automatically
         String clientId = "Server Instance";
 
         MemoryPersistence persistence = new MemoryPersistence();
         try {
-            MqttClient mqttClient = new MqttClient(i.BROKER, clientId, persistence);
+            MqttClient mqttClient = new MqttClient(broker, clientId, persistence);
             MqttConnectOptions connOpts = new MqttConnectOptions();
             connOpts.setCleanSession(true);
-            connOpts.setUserName(i.USERNAME);
-            connOpts.setPassword(i.PASSWORD.toCharArray());
+            connOpts.setUserName(username);
+            connOpts.setPassword(pass.toCharArray());
 
             mqttClient.setCallback(new MqttCallback() {
                 public void messageArrived(String topic, MqttMessage msg)
@@ -91,11 +100,11 @@ public class MQTTSubscriber {
 
             mqttClient.connect(connOpts);
 
-            mqttClient.subscribe(i.MONITORING_TOPIC, i.QOS);
-            System.out.println("Subscribed to: " + i.MONITORING_TOPIC);
+            mqttClient.subscribe("Monitoring Data", QOS);
+            System.out.println("Subscribed to: " + "Monitoring Data");
 
-            mqttClient.subscribe(i.FLOOR_TOPIC, i.QOS);
-            System.out.println("Subscribed to: " + i.FLOOR_TOPIC);
+            mqttClient.subscribe("Floor Check", QOS);
+            System.out.println("Subscribed to: " + "Floor Check");
 
             System.out.println();
             System.out.println("Waiting for messages...");

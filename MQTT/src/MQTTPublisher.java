@@ -8,16 +8,23 @@ import java.util.Date;
  * Created by Jamie on 13/11/2015.
  */
 public class MQTTPublisher {
+    private static final int QOS = 1;
+
+
     public static void main(String[] args) throws InterruptedException {
 
         //set up interface for credentials
-        MQTTInterface i = new MQTTInterface();
+        //MQTTInterface i = new MQTTInterface();
+
+        String broker = System.getenv("MQTT_BROKER");
+        String username = System.getenv("MQTT_USERNAME");
+        String pass = System.getenv("MQTT_PASS");
 
         String clientId = "Publisher";
 
         MemoryPersistence persistence = new MemoryPersistence();
         try {
-            MqttClient mqttClient = new MqttClient(i.BROKER, clientId, persistence);
+            MqttClient mqttClient = new MqttClient(broker, clientId, persistence);
             mqttClient.setCallback(new MqttCallback() {
                 public void messageArrived(String topic, MqttMessage msg)
                         throws Exception {
@@ -35,8 +42,8 @@ public class MQTTPublisher {
 
             MqttConnectOptions connOpts = new MqttConnectOptions();
             connOpts.setCleanSession(false);
-            connOpts.setUserName(i.USERNAME);
-            connOpts.setPassword(i.PASSWORD.toCharArray());
+            connOpts.setUserName(username);
+            connOpts.setPassword(pass.toCharArray());
             mqttClient.connect(connOpts);
 
 
@@ -49,36 +56,36 @@ public class MQTTPublisher {
 
             String s = "{\"Floor\":1, \"Timestamp\":\""+ sdf.format(d) +"\", \"Count\":3}";
             MqttMessage message = new MqttMessage(s.getBytes());
-            message.setQos(i.QOS);
+            message.setQos(QOS);
             System.out.println("Publish message: " + message);
-            mqttClient.publish(i.MONITORING_TOPIC, message);
+            mqttClient.publish("Monitoring Data", message);
 
             Thread.sleep(1000);
 
             d = new Date();
             s = "{\"Floor\":5, \"Timestamp\":\""+ sdf.format(d) +"\", \"Count\":0}";
             message = new MqttMessage(s.getBytes());
-            message.setQos(i.QOS);
+            message.setQos(QOS);
             System.out.println("Publish message: " + message);
-            mqttClient.publish(i.FLOOR_TOPIC, message);
+            mqttClient.publish("Floor Check", message);
 
             Thread.sleep(1000);
 
             d = new Date();
             s = "{\"Floor\":2, \"Timestamp\":\""+ sdf.format(d) +"\", \"Count\":8}";
             message = new MqttMessage(s.getBytes());
-            message.setQos(i.QOS);
+            message.setQos(QOS);
             System.out.println("Publish message: " + message);
-            mqttClient.publish(i.MONITORING_TOPIC, message);
+            mqttClient.publish("Monitoring Data", message);
 
             Thread.sleep(1000);
 
             d = new Date();
             s = "{\"Floor\":6, \"Timestamp\":\""+ sdf.format(d) +"\", \"Count\":2}";
             message = new MqttMessage(s.getBytes());
-            message.setQos(i.QOS);
+            message.setQos(QOS);
             System.out.println("Publish message: " + message);
-            mqttClient.publish(i.FLOOR_TOPIC, message);
+            mqttClient.publish("Floor Check", message);
 
 
 
