@@ -20,7 +20,10 @@ public class Preprocessor implements Function<Mat, Mat> {
         //basic horizontal flip
         //add more pre-processing
         Core.flip(t, mirroredFrame, 1);
-        System.out.println("Flipped");
+
+        //test
+        //System.out.println("Flipped");
+
         return mirroredFrame;
     }
 

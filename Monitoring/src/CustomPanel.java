@@ -28,6 +28,9 @@ public class CustomPanel extends JPanel {
         int height = inputFrame.height();
         int channels = inputFrame.channels();
 
+        //debug
+        //System.out.println(width + " " + height + " " + channels);
+
         byte[] sourcePixels = new byte[width * height * channels];
         inputFrame.get(0, 0, sourcePixels);
 

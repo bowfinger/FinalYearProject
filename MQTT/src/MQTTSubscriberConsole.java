@@ -1,36 +1,34 @@
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
-import java.util.Date;
-
 /**
- * Created by Jamie on 11/12/2015.
+ * Created by Jamie on 13/11/2015.
  */
-public class MQTTSubscriber {
+public class MQTTSubscriberConsole {
+    private static final int QOS = 1;
 
-    private static final String BROKER;
-    private static final String USER;
-    private static final String PASS;
+    public static void main(String[] args) throws InterruptedException {
 
-    //private String ClientId;
-    private MqttClient mqttClient;
+        //set up interface for credentials
+        // use environment variables instead here for security
+        //MQTTInterface i = new MQTTInterface();
 
-    static{
-        BROKER = System.getenv("MQTT_BROKER");
-        USER = System.getenv("MQTT_USERNAME");
-        PASS = System.getenv("MQTT_PASS");
-    }
+        String broker = System.getenv("MQTT_BROKER");
+        String username = System.getenv("MQTT_USERNAME");
+        String pass = System.getenv("MQTT_PASS");
 
-    public MQTTSubscriber(String clientId){
-        //this.ClientId = clientId;
+        System.out.println(System.getenv());
+
+        //MQTT client id to use for the device. "" will generate a client id automatically
+        String clientId = "Server Instance";
 
         MemoryPersistence persistence = new MemoryPersistence();
         try {
-            mqttClient = new MqttClient(BROKER, clientId, persistence);
+            MqttClient mqttClient = new MqttClient(broker, clientId, persistence);
             MqttConnectOptions connOpts = new MqttConnectOptions();
             connOpts.setCleanSession(true);
-            connOpts.setUserName(USER);
-            connOpts.setPassword(PASS.toCharArray());
+            connOpts.setUserName(username);
+            connOpts.setPassword(pass.toCharArray());
 
             mqttClient.setCallback(new MqttCallback() {
                 public void messageArrived(String topic, MqttMessage msg)
@@ -102,6 +100,28 @@ public class MQTTSubscriber {
 
             mqttClient.connect(connOpts);
 
+            mqttClient.subscribe("Monitoring Data", QOS);
+            System.out.println("Subscribed to: " + "Monitoring Data");
+
+            mqttClient.subscribe("Floor Check", QOS);
+            System.out.println("Subscribed to: " + "Floor Check");
+
+            System.out.println();
+            System.out.println("Waiting for messages...");
+            System.out.println();
+
+            //keeps subscriber connection open
+            //try {
+            //    while (true) {
+            //        Thread.sleep(300);
+            //    }
+            //} catch (InterruptedException ie) {
+                //execution closed by used
+            //} finally {
+            //    mqttClient.disconnect();
+            //    System.exit(0);
+            //}
+
         } catch (MqttException me) {
             System.out.println("reason " + me.getReasonCode());
             System.out.println("msg " + me.getMessage());
@@ -110,19 +130,6 @@ public class MQTTSubscriber {
             System.out.println("excep " + me);
             me.printStackTrace();
         }
-    }
 
-    public void connect(){
-        try {
-            mqttClient.subscribe("Monitoring Data", 1);
-            System.out.println("Subscribed to: " + "Monitoring Data");
-
-            mqttClient.subscribe("Floor Check", 1);
-            System.out.println("Subscribed to: " + "Floor Check");
-
-            System.out.println("\nWaiting for messages...\n");
-        } catch (MqttException e) {
-            e.printStackTrace();
-        }
     }
 }

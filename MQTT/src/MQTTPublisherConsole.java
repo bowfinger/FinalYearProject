@@ -7,7 +7,7 @@ import java.util.Date;
 /**
  * Created by Jamie on 13/11/2015.
  */
-public class MQTTPublisher {
+public class MQTTPublisherConsole {
     private static final int QOS = 1;
 
 
