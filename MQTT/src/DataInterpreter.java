@@ -21,4 +21,13 @@ public class DataInterpreter{
         FloorData data = gson.fromJson(jsonData, FloorData.class);
         return data;
     }
+
+    public static String write(FloorData floorData){
+        Gson gson = new GsonBuilder()
+                .registerTypeAdapter(FloorData.class, new CustomSerializer())
+                .create();
+
+        String dataToReturn = gson.toJson(floorData);
+        return dataToReturn;
+    }
 }

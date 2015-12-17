@@ -26,6 +26,11 @@ public class FloorData {
         return this.Timestamp;
     }
 
+    //should it return empty string or null/crash?
+    public String getTimestampAsString() {
+        return (this.Timestamp == null ? this.Timestamp.toString() : "");
+    }
+
     public void setTimestamp(Date timestamp) {
         this.Timestamp = timestamp;
     }

@@ -16,8 +16,6 @@ public class CustomDeserializer implements JsonDeserializer<FloorData> {
     @Override
     public FloorData deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
         JsonObject obj = json.getAsJsonObject();
-        //Map.Entry<String, JsonElement> entry = obj.entrySet().iterator().next();
-        //if (entry == null) return null;
         int floor = obj.get("Floor").getAsInt();
         Date date;
         try
