@@ -1,9 +1,11 @@
 /**
  * Created by Jamie on 06/11/2015.
  */
+import org.eclipse.paho.client.mqttv3.MqttException;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 
+import java.util.Date;
 import java.util.stream.Stream;
 
 public class OpenCVApplication {
@@ -13,6 +15,7 @@ public class OpenCVApplication {
     private FrameSupplier supplier;
     private Stream<Mat> frameStream;
     private static Mat initialFrame;
+    private MQTTMessenger mqttMessenger;
 
     public OpenCVApplication(AppMode mode){
         //load OpenCV lib
@@ -28,7 +31,18 @@ public class OpenCVApplication {
         }
     }
 
-    public void run(){
+    public void run() throws MqttException {
+
+        //register MQTT
+        mqttMessenger = new MQTTMessenger();
+        mqttMessenger.connect();
+
+        FloorData d = new FloorData(1, new Date(), 12);
+        try {
+            mqttMessenger.publish("Monitoring Data", d);
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
 
         //set stream
         frameStream = Stream.generate(supplier);

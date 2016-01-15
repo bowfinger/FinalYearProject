@@ -9,5 +9,7 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="Gradle: org.bytedeco.javacpp-presets:opencv:3.0.0-1.0" level="project" />
     <orderEntry type="library" exported="" name="opencv-300" level="application" />
+    <orderEntry type="module" module-name="MQTT" />
+    <orderEntry type="library" name="Gradle: org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.0.2" level="project" />
   </component>
 </module>
