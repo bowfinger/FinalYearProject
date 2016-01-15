@@ -1,68 +1,182 @@
+import java.awt.*;
 import java.util.BitSet;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Created by Jamie on 08/12/2015.
  */
+
 public class BuildAI {
 
-    private static int FLOORS = 8;
-    private static HashMap<Integer, List<BitSet>> FLOORPERMS;
-    private static BitSet BITSET = new BitSet(8);
-    private static List<BitSet> BITSETLIST;
 
-    public static void main(String[] args){
-        //instantiate
-        FLOORPERMS = new HashMap<Integer, List<BitSet>>();
-        BITSETLIST = new LinkedList<BitSet>();
+    public static final int FLOOR_TRAVEL_TIME = 3000; //milliseconds
+    public static final int DOOR_OPEN_CLOSE_TIME = 2000; //milliseconds
 
-        fill(0,8);
+    public static final int NO_OF_FLOORS = 8;
+    public static int currentFloor;
+    public static List<Integer> callStack = new LinkedList<Integer>();
+    public static Random rnd = new Random();
+    public static List<BitSet> permutations = new LinkedList<BitSet>();
+    public static List<List<Integer>> possibleRoutes = new LinkedList<List<Integer>>();
 
+    public static void main(String[] args)
+    {
 
-        System.out.println(BITSETLIST.size());
-
-        for(int i = 0; i < FLOORS; i++){
-            List<BitSet> list = new LinkedList<BitSet>(BITSETLIST);
-            FLOORPERMS.put(i, list);
+        // Create permutations
+        for (int i = 0; i < Math.pow(2,NO_OF_FLOORS); i++) {
+            permutations.add(convert(i));
         }
 
-        System.out.println(FLOORPERMS.size());
-
-        for(int j = 0; j < BITSETLIST.size(); j++){
-            for(int k = 0; k < BITSETLIST.get(j).size(); k++){
-                int bit = BITSETLIST.get(j).get(k) == true ? 1 : 0;
-                System.out.print(bit);
+        // Display the results.
+        for (BitSet permutation : permutations) {
+            for (int i = 0; i < NO_OF_FLOORS; i++) {
+                if (permutation.get(i)) {
+                    System.out.print("1");
+                } else {
+                    System.out.print("0");
+                }
             }
             System.out.println();
         }
 
+        //populate calls with current floor set
+        addDummyCalls(3);
+
+        //check stack for floors
+        checkStack();
+
+        //get all possible combinations through recursion
+        permute();
+
+        //compute costs
+        computeCosts();
     }
 
-    static void fill(int k, int n)
-    {
-        BitSet cloned;
-        if (k == n)
-        {
-            System.out.println(BITSET);
-            return;
+    //needs more logic to include the factor of 0/G only travelling up
+    //and 8/top floor only travelling down
+    private static void computeCosts() {
+        int tempCurrentFloor = getCurrentFloor();
+
+        int bestRoute = 0;
+        int bestRouteTime = 0;
+
+        for(List<Integer> route : possibleRoutes){
+            int routeTotalTime = 0;
+            for(int floorToVisit : route){
+                //abs diff between current and next
+                int floorDiff = Math.abs(getCurrentFloor() - floorToVisit);
+                routeTotalTime += (floorDiff * FLOOR_TRAVEL_TIME) +
+                        ((DOOR_OPEN_CLOSE_TIME * 2) * floorDiff);
+
+                //set current floor to floorToVisit (now visited)
+                setCurrentFloor(floorToVisit);
+            }
+            //print route
+            int routeNum = (possibleRoutes.indexOf(route) + 1);
+            System.out.println("Route: " + routeNum);
+            System.out.println("Total time (ms): " + routeTotalTime);
+
+            //set best route
+            if (bestRouteTime == 0 || routeTotalTime < bestRouteTime){
+                bestRoute = routeNum;
+                bestRouteTime = routeTotalTime;
+            }
+
+            //reset current floor to original
+            setCurrentFloor(tempCurrentFloor);
         }
-        BITSET.set(k, false);
 
-        //added//////////////////
-        //cloned = (BitSet)BITSET.clone();
-        //BITSETLIST.add(cloned);
-        //////////////////////
-
-        fill(k + 1, n);
-        BITSET.set(k, true);
-
-        //added////////////////
-        cloned = (BitSet)BITSET.clone();
-        BITSETLIST.add(cloned);
-        ////////////////////////
-
-        fill(k+1, n);
+        //best route
+        System.out.println("Best route: " + bestRoute + " time: " +bestRouteTime);
     }
+
+    private static void permute(){
+        permute(0);
+    }
+
+    private static void permute(int index) {
+            if (index == callStack.size())
+            {
+                List<Integer> route = new LinkedList<Integer>();
+                for (int i = 0; i < callStack.size(); i++)
+                {
+                    System.out.print(" [" + callStack.get(i) + "] ");
+                    //add to list
+                    route.add(callStack.get(i));
+                }
+                System.out.println();
+                possibleRoutes.add(route);
+            }
+            else
+            {
+                for (int i = index; i < callStack.size(); i++)
+                {
+                    int temp = callStack.get(index);
+                    callStack.set(index, callStack.get(i));
+                    callStack.set(i, temp);
+
+                    permute(index + 1);
+
+                    temp = callStack.get(index);
+                    callStack.set(index, callStack.get(i));
+                    callStack.set(i,temp);
+                }
+            }
+    }
+
+    private static void checkStack() {
+        //print floors in stack
+        System.out.println("Floor numbers in stack");
+        for(int i : callStack){
+            System.out.println(i);
+        }
+    }
+
+    private static void addDummyCalls(int currentFloor) {
+        if (currentFloor < 0 || currentFloor > NO_OF_FLOORS){
+            System.out.println("Error - outside of floor range");
+            System.exit(-1);
+        }
+
+        setCurrentFloor(currentFloor);
+        addDummyCalls();
+    }
+
+    private static void addDummyCalls() {
+        //create 3 random calls excluding current and duplicates
+        int floor;
+        for (int i = 0; i < 3; i++){
+            floor = rnd.nextInt(NO_OF_FLOORS - 1);
+            if (floor != currentFloor && !callStack.contains(floor)){
+                callStack.add(floor);
+            }else{
+                i--;
+            }
+        }
+    }
+
+    public static void setCurrentFloor(int currentFloor) {
+        BuildAI.currentFloor = currentFloor;
+    }
+
+    public static int getCurrentFloor() {
+        return BuildAI.currentFloor;
+    }
+
+    public static BitSet convert(long value) {
+        BitSet bits = new BitSet();
+        int index = 0;
+        while (value != 0L) {
+            if (value % 2L != 0) {
+                bits.set(index);
+            }
+            ++index;
+            value = value >>> 1;
+        }
+        return bits;
+    }
+
 }
+
