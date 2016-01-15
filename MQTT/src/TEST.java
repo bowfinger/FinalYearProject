@@ -35,8 +35,13 @@ public class TEST {
         System.out.println(d1.toString());
 
 
-        MQTTMessenger mqttMessenger = new MQTTMessenger();
-        mqttMessenger.initialise();
+        MQTTMessenger mqttMessenger = null;
+        try {
+            mqttMessenger = new MQTTMessenger();
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
+        mqttMessenger.connect();
 
         try {
             //set subscribes
