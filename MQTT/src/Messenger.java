@@ -4,8 +4,9 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 /**
  * Created by Jamie on 17/12/2015.
  */
-public class MQTTMessenger extends MqttClient {
+public class Messenger{
 
+    private MqttClient mqttClient;
     //private MemoryPersistence persistence = new MemoryPersistence();
     private MqttConnectOptions connOpts = new MqttConnectOptions();
     private static final String BROKER;
@@ -13,7 +14,7 @@ public class MQTTMessenger extends MqttClient {
     private static final String PASS;
 
     //set in constructor if needed
-    private static final String CLIENT_ID = "";
+    //private static final String CLIENT_ID = "";
 
     static{
         BROKER = System.getenv("MQTT_BROKER");
@@ -21,18 +22,17 @@ public class MQTTMessenger extends MqttClient {
         PASS = System.getenv("MQTT_PASS");
     }
 
-    public MQTTMessenger() throws MqttException {
-        super(BROKER, CLIENT_ID, new MemoryPersistence());
-
+    public Messenger(String clientId, MqttCallback callback) throws MqttException {
+        mqttClient = new MqttClient(BROKER, clientId, new MemoryPersistence());
+        mqttClient.setCallback(callback);
         connOpts.setCleanSession(true);
         connOpts.setUserName(USER);
         connOpts.setPassword(PASS.toCharArray());
     }
 
-    @Override
     public void connect(){
         try {
-            super.connect(connOpts);
+            mqttClient.connect(connOpts);
         } catch (MqttException me) {
             System.out.println("reason " + me.getReasonCode());
             System.out.println("msg " + me.getMessage());
@@ -43,9 +43,21 @@ public class MQTTMessenger extends MqttClient {
         }
     }
 
-    @Override
+    public void disconnect(){
+        try{
+            mqttClient.disconnect();
+        }catch(MqttException me) {
+            System.out.println("reason " + me.getReasonCode());
+            System.out.println("msg " + me.getMessage());
+            System.out.println("loc " + me.getLocalizedMessage());
+            System.out.println("cause " + me.getCause());
+            System.out.println("excep " + me);
+            me.printStackTrace();
+        }
+    }
+
     public void subscribe(String topic) throws MqttException {
-        super.subscribe(topic, 1);
+        mqttClient.subscribe(topic, 1);
     }
 
     public void publish(String topic, FloorData floorData) throws MqttException {
@@ -55,6 +67,6 @@ public class MQTTMessenger extends MqttClient {
 
         System.out.println("Publishing message: " + message);
 
-        super.publish(topic, message);
+        mqttClient.publish(topic, message);
     }
 }
