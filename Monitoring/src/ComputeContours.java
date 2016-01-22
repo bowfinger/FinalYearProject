@@ -8,7 +8,7 @@ import java.util.function.Function;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
 
-public class ComputeContours implements Function<Mat, Mat>{
+public class ComputeContours implements Function<Mat, List<MatOfPoint>>{
 
     private static final double THRESHOLD = 25;
     private static final double MAX_THRESHOLD = 255;
@@ -60,7 +60,7 @@ public class ComputeContours implements Function<Mat, Mat>{
         }
 
         //contour count
-        System.out.println("Contours = " + SelectedContours.size());
+        System.out.println("Contours = " + selectedContours.size());
         return selectedContours;
     }
 
