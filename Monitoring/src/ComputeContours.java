@@ -14,9 +14,10 @@ public class ComputeContours implements Function<Mat, Mat>{
     private static final double MAX_THRESHOLD = 255;
     private static final double BLUR_SIZE = 21;
     private static final double MIN_CONTOUR_AREA = 2000;
+    private static final double MAX_CONTOUR_AREA = 4000;
 
     @Override
-    public Mat apply(Mat t) {
+    public List<MatOfPoint> apply(Mat t) {
 
         Mat grey = new Mat();
         Mat hierarchy = new Mat();
@@ -49,28 +50,18 @@ public class ComputeContours implements Function<Mat, Mat>{
         Imgproc.findContours(greyCopy, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_NONE);
 
         //a list for only selected contours
-        List<MatOfPoint> SelectedContours = new ArrayList<MatOfPoint>(200);
+        List<MatOfPoint> selectedContours = new ArrayList<MatOfPoint>();
 
         for (MatOfPoint contour : contours) {
-            if (Imgproc.contourArea(contour) > MIN_CONTOUR_AREA) {
-                SelectedContours.add(contour);
+            double area = Imgproc.contourArea(contour);
+            if (area >= MIN_CONTOUR_AREA && area <= MAX_CONTOUR_AREA) {
+                selectedContours.add(contour);
             }
         }
 
         //contour count
         System.out.println("Contours = " + SelectedContours.size());
-
-        Imgproc.drawContours(t, SelectedContours, -1, new Scalar(255,255,255,0), 1);
-        return t;
-
-
-
-
-
-
-
-        //Imgproc.findContours(t, contours,  hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
-        //return contours;
+        return selectedContours;
     }
 
 }
