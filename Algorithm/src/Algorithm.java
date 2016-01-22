@@ -15,36 +15,53 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 public class Algorithm implements ICallstackCallback {
 
-    private MQTTMessenger mqttMessenger;
 
-    public static final int FLOOR_TRAVEL_TIME = 3000; //milliseconds
-    public static final int DOOR_OPEN_CLOSE_TIME = 2000; //milliseconds
+    private Messenger messenger;
 
-    public static final int NO_OF_FLOORS = 8;
-    public int currentFloor = 0;
+    private static final String CLIENT_ID = "ALGORITHM";
+    private static final int FLOOR_TRAVEL_TIME = 3000; //milliseconds
+    private static final int DOOR_OPEN_CLOSE_TIME = 2000; //milliseconds
+    private static final int NO_OF_FLOORS = 8;
+    private int currentFloor = 0;
 
     //split this call stack into hall and car
-    public CallStackList<Integer> callStack = new CallStackList<Integer>();
-    public List<Integer> tempCallStack = new LinkedList<Integer>();
+    private CallStackList<Integer> callStack = new CallStackList<Integer>();
 
-    public Random rnd = new Random();
-    public List<BitSet> permutations = new LinkedList<BitSet>();
-    public List<List<Integer>> possibleRoutes = new LinkedList<List<Integer>>();
+    private List<BitSet> permutations = new LinkedList<BitSet>();
+    private List<List<Integer>> possibleRoutes = new LinkedList<List<Integer>>();
 
-    public BlockingQueue<FloorData> monitoringData = new LinkedBlockingQueue<FloorData>();
+    private BlockingQueue<FloorData> monitoringData = new LinkedBlockingQueue<FloorData>();
 
     public void run() throws MqttException {
+
+        // Create permutations
+        for (int i = 0; i < Math.pow(2,NO_OF_FLOORS); i++) {
+            permutations.add(convert(i));
+        }
+
+        // Display the results.
+        for (BitSet permutation : permutations) {
+            for (int i = 0; i < NO_OF_FLOORS; i++) {
+                if (permutation.get(i)) {
+                    System.out.print("1");
+                } else {
+                    System.out.print("0");
+                }
+            }
+            System.out.println();
+        }
 
         callStack.setCallback(this);
 
         //register MQTT
-        mqttMessenger = new MQTTMessenger();
-        mqttMessenger.setCallback(buildCallback());
-        mqttMessenger.connect();
+        messenger = new Messenger(CLIENT_ID, buildCallback());
+        messenger.connect();
 
+        //subscribe to all
         try {
-            //mqttMessenger.subscribe("Monitoring Data");
-            mqttMessenger.subscribe("Floor Call");
+            messenger.subscribe("Monitor/#");
+            messenger.subscribe("Call/Floor/#");
+            messenger.subscribe("Call/Hall/#");
         } catch (MqttException e) {
             e.printStackTrace();
         }
@@ -84,9 +101,11 @@ public class Algorithm implements ICallstackCallback {
 
         int bestRoute = 0;
         int bestRouteTime = 0;
+        String bestRouteString = "";
 
         for(List<Integer> route : possibleRoutes){
             int routeTotalTime = 0;
+            String routeString = String.valueOf(getCurrentFloor());
             for(int floorToVisit : route){
                 //abs diff between current and next
                 int floorDiff = Math.abs(getCurrentFloor() - floorToVisit);
@@ -94,6 +113,7 @@ public class Algorithm implements ICallstackCallback {
                         ((DOOR_OPEN_CLOSE_TIME * 2) * floorDiff);
 
                 //set current floor to floorToVisit (now visited)
+                routeString += " => " + String.valueOf(floorToVisit);
                 setCurrentFloor(floorToVisit);
             }
             //print route
@@ -106,6 +126,7 @@ public class Algorithm implements ICallstackCallback {
             if (bestRouteTime == 0 || routeTotalTime < bestRouteTime){
                 bestRoute = routeNum;
                 bestRouteTime = routeTotalTime;
+                bestRouteString = routeString;
             }
 
             //reset current floor to original
@@ -113,7 +134,7 @@ public class Algorithm implements ICallstackCallback {
         }
 
         //best route
-        System.out.println("Best route: " + bestRoute + " time: " +bestRouteTime);
+        System.out.println(String.format("Best route: %d\nRoute time: %d\nRoute: %s", bestRoute, bestRouteTime, bestRouteString));
     }
 
     private void permute(){
@@ -171,8 +192,8 @@ public class Algorithm implements ICallstackCallback {
 
                     //depending on topic of data do something
                     //finalise topic values
-                    switch(topic){
-                        case "Monitoring Data":
+                    switch(topic.substring(0, topic.length() - 1)){
+                        case "Monitor/":
 
                             //store data
                             monitoringData.put(data);
@@ -184,21 +205,14 @@ public class Algorithm implements ICallstackCallback {
 
 
                             break;
-                        case "Floor Check":
-                            if(data.getCount() == 0){
-                                //remove hall call from stack
-                                System.out.println("Nobody waiting at Floor " + data.getFloor());
-                                System.out.println("Removing hall call from stack based on data...");
-                                System.out.println();
-                            }else{
-                                System.out.println("Passengers still waiting at Floor " + data.getFloor() + ", proceeding as normal");
-                                System.out.println();
-                            }
+                        //test
+                        case "Call/Floor/":
+                            System.out.println("Floor call received");
+                            callStack.add(data.getFloor());
                             break;
 
-                        //test
-                        case "Floor Call":
-                            System.out.println("Floor call received");
+                        case "Call/Hall/":
+                            System.out.println("Hall call received");
                             callStack.add(data.getFloor());
                             break;
                     }
@@ -206,7 +220,6 @@ public class Algorithm implements ICallstackCallback {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-
             }
 
             @Override
