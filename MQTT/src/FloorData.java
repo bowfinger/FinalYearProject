@@ -4,43 +4,43 @@ import java.util.Date;
  * Created by Jamie on 13/11/2015.
  */
 public class FloorData {
-    private int Floor;
-    private Date Timestamp;
-    private int Count;
+    private int floor;
+    private Date timestamp;
+    private int count;
 
     public FloorData(int floor, Date timestamp, int count){
-        this.Floor = floor;
-        this.Timestamp = timestamp;
-        this.Count = count;
+        this.floor = floor;
+        this.timestamp = timestamp;
+        this.count = count;
     }
 
     public int getFloor() {
-        return this.Floor;
+        return this.floor;
     }
 
     public void setFloor(int floor) {
-        this.Floor = floor;
+        this.floor = floor;
     }
 
     public Date getTimestamp() {
-        return this.Timestamp;
+        return this.timestamp;
     }
 
     //should it return empty string or null/crash?
     public String getTimestampAsString() {
-        return (this.Timestamp == null ? this.Timestamp.toString() : "");
+        return (this.timestamp == null ? this.timestamp.toString() : "");
     }
 
     public void setTimestamp(Date timestamp) {
-        this.Timestamp = timestamp;
+        this.timestamp = timestamp;
     }
 
     public int getCount() {
-        return this.Count;
+        return this.count;
     }
 
     public void setCount(int count) {
-        this.Count = count;
+        this.count = count;
     }
 
     // Used for testing/console output

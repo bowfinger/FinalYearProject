@@ -35,30 +35,32 @@ public class TEST {
         System.out.println(d1.toString());
 
 
-        MQTTMessenger mqttMessenger = null;
+        /*
+        Messenger messenger = null;
         try {
-            mqttMessenger = new MQTTMessenger();
+            messenger = new Messenger();
         } catch (MqttException e) {
             e.printStackTrace();
         }
-        mqttMessenger.connect();
+        messenger.connect();
 
         try {
             //set subscribes
-            mqttMessenger.subscribe("Monitoring Data");
-            mqttMessenger.subscribe("Floor Check");
+            messenger.subscribe("Monitoring Data");
+            messenger.subscribe("Floor Check");
 
             //publish
-            mqttMessenger.publish("Monitoring Data", d);
+            messenger.publish("Monitoring Data", d);
             Thread.sleep(1000);
-            mqttMessenger.publish("Monitoring Data", d);
+            messenger.publish("Monitoring Data", d);
             Thread.sleep(1000);
-            mqttMessenger.publish("Floor Check", d1);
+            messenger.publish("Floor Check", d1);
         } catch (MqttException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        */
 
 
     }

@@ -15,10 +15,15 @@ public class PackageData implements Consumer<List<MatOfPoint>> {
     private Messenger messenger;
     private int floorId;
     public PackageData(int floorId) throws MqttException {
-        this.messenger = new Messenger("", new MqttCallback() {
+        this.messenger = new Messenger(String.format("Floor%d", floorId), new MqttCallback() {
             @Override
             public void connectionLost(Throwable throwable) {
-
+                try {
+                    messenger.wait(10000);
+                    messenger.connect();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
 
             @Override
@@ -28,7 +33,7 @@ public class PackageData implements Consumer<List<MatOfPoint>> {
 
             @Override
             public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
-                System.out.println("Message sent by OpenCV");
+                System.out.println("Messenger - Delivery Complete");
             }
         });
         this.floorId = floorId;

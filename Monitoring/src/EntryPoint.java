@@ -5,12 +5,18 @@ import org.eclipse.paho.client.mqttv3.MqttException;
  */
 public class EntryPoint {
 
-    //hardcoded floor num
-    private static final int FLOOR_NUM = 4;
-
     public static void main(String[] args) throws InterruptedException, MqttException {
 
-        OpenCVApplication app = new OpenCVApplication(AppMode.DEBUG, FLOOR_NUM);
+        int floorNum = 0;
+        if(args.length == 1){
+            try {
+                floorNum = Integer.parseInt(args[0]);
+            }catch (NumberFormatException ex){
+                System.exit(-1);
+            }
+        }
+
+        OpenCVApplication app = new OpenCVApplication(AppMode.DEBUG, floorNum);
         app.run();
 
         //using dummy publisher to generate counts of people waiting at floors every 1 minute
