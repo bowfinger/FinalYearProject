@@ -28,12 +28,12 @@ public class PackageData implements Consumer<List<MatOfPoint>> {
 
             @Override
             public void messageArrived(String s, MqttMessage mqttMessage) throws Exception {
-
+                //not used - does not receive any messages
             }
 
             @Override
             public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
-                System.out.println("Messenger - Delivery Complete");
+                System.out.println("Monitoring Data - Delivery Complete");
             }
         });
         this.floorId = floorId;
@@ -44,10 +44,10 @@ public class PackageData implements Consumer<List<MatOfPoint>> {
     public void accept(List<MatOfPoint> matOfPoints) {
         FloorData data = new FloorData(floorId, new Date(), matOfPoints.size());
 
-        //publish first data then sleep for 10 seconds
+        //publish first data then sleep for 60 seconds
         try {
             messenger.publish(String.format("Monitor/%d", floorId), data);
-            Thread.sleep(10000);
+            Thread.sleep(60000);
         } catch (MqttException | InterruptedException e) {
             e.printStackTrace();
         }

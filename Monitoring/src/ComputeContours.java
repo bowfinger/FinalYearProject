@@ -13,8 +13,8 @@ public class ComputeContours implements Function<Mat, List<MatOfPoint>>{
     private static final double THRESHOLD = 25;
     private static final double MAX_THRESHOLD = 255;
     private static final double BLUR_SIZE = 21;
-    private static final double MIN_CONTOUR_AREA = 2000;
-    private static final double MAX_CONTOUR_AREA = 4000;
+    private static final double MIN_CONTOUR_AREA = 3000;
+    private static final double MAX_CONTOUR_AREA = 10000;
     private static final int DILATE_X = 2;
     private static final int DILATE_Y = 2;
     private static final int ERODE_X = 2;
