@@ -10,16 +10,27 @@ public class OpenCVApplication {
 
     private FrameSupplier supplier;
     private static Mat initialFrame;
-    private int floorId;
+    //private int floorId;
 
-    public OpenCVApplication(AppMode mode, int floorId){
-        this.floorId = floorId;
+    private Preprocessor preprocessor;
+    private ComputeContours computeContours;
+    private PackageData packageData;
+
+    public OpenCVApplication(int floorId){
+        //this.floorId = floorId;
         //load OpenCV lib
         System.loadLibrary( Core.NATIVE_LIBRARY_NAME );
 
         //Instantiate variables
         supplier = new FrameSupplier();
         initialFrame = new Mat();
+        preprocessor = new Preprocessor();
+        computeContours = new ComputeContours();
+        try {
+            packageData = new PackageData(floorId);
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
     }
 
     public static Mat getInitialFrame(){
@@ -40,8 +51,8 @@ public class OpenCVApplication {
         }
 
         //functions applied to stream
-        frameStream.map(new Preprocessor())
-                .map(new ComputeContours())
-                .forEach(new PackageData(floorId));
+        frameStream.map(preprocessor)
+                .map(computeContours)
+                .forEach(packageData);
     }
 }
