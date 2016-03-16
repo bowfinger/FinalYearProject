@@ -1,5 +1,8 @@
+import com.google.gson.Gson;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
+
+import javax.annotation.processing.RoundEnvironment;
 
 /**
  * Created by Jamie on 17/12/2015.
@@ -60,8 +63,18 @@ public class Messenger{
         mqttClient.subscribe(topic, 1);
     }
 
-    public void publish(String topic, FloorData floorData) throws MqttException {
-        String jsonData = DataInterpreter.write(floorData);
+    public void publish(String topic, Object data) throws MqttException {
+
+        String jsonData;
+
+        if(data.getClass().equals(FloorData.class)) {
+            jsonData = DataInterpreter.writeFloorData((FloorData) data);
+        }else if(data.getClass().equals(RouteData.class)){
+            jsonData = DataInterpreter.writeRouteData((RouteData) data);
+        }else{
+            //plain optimised routing list
+            jsonData = new Gson().toJson(data);
+        }
         MqttMessage message = new MqttMessage(jsonData.getBytes());
         message.setQos(1);
 

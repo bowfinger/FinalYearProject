@@ -28,7 +28,7 @@ public class FloorData {
 
     //should it return empty string or null/crash?
     public String getTimestampAsString() {
-        return (this.timestamp == null ? this.timestamp.toString() : "");
+        return (this.timestamp != null ? this.timestamp.toString() : "");
     }
 
     public void setTimestamp(Date timestamp) {
