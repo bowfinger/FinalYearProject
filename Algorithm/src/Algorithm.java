@@ -3,34 +3,36 @@ import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
-import java.util.BitSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by Jamie on 29/12/2015.
  */
-public class Algorithm implements ICallstackCallback {
+public class Algorithm {
 
-
-    private Messenger messenger;
+    private Messenger publisher;
+    private Messenger subscriber;
+    private DataStorageHelper dsHelper;
 
     private static final String CLIENT_ID = "ALGORITHM";
-    private static final int FLOOR_TRAVEL_TIME = 3000; //milliseconds
-    private static final int DOOR_OPEN_CLOSE_TIME = 2000; //milliseconds
+
+    //weightings
+    private static final double BASE_WEIGHTING = 1.0;
+    private static final double TRAVEL_UP_MULTIPLIER = 1.1;
+    private static final double TRAVEL_DOWN_MULTIPLIER = 0.8;
+    private static final double FLOOR_DISTANCE_MULTIPLIER = 0.1;
     private static final int NO_OF_FLOORS = 8;
+    private static final double[][] COST_MATRIX = new double[8][8];
     private int currentFloor = 0;
 
-    //split this call stack into hall and car
-    private CallStackList<Integer> callStack = new CallStackList<Integer>();
+    private List<BitSet> permutations = new LinkedList<>();
+    private Map<BitSet, HashMap<Integer, List<Integer>>> optimumRouteLookup = new HashMap<>();
 
-    private List<BitSet> permutations = new LinkedList<BitSet>();
-    private List<List<Integer>> possibleRoutes = new LinkedList<List<Integer>>();
-
-    private BlockingQueue<FloorData> monitoringData = new LinkedBlockingQueue<FloorData>();
+    private List<FloorData> monitoringData = new ArrayList<>();
 
     public void run() throws MqttException {
 
@@ -39,31 +41,79 @@ public class Algorithm implements ICallstackCallback {
             permutations.add(convert(i));
         }
 
-        // Display the results.
-        for (BitSet permutation : permutations) {
-            for (int i = 0; i < NO_OF_FLOORS; i++) {
-                if (permutation.get(i)) {
-                    System.out.print("1");
-                } else {
-                    System.out.print("0");
-                }
+        // generate optimum map
+        for(BitSet permutation : permutations){
+            optimumRouteLookup.put(permutation, new HashMap<>());
+            for(int i = 0; i < NO_OF_FLOORS; i++){
+                optimumRouteLookup.get(permutation).put(i, new ArrayList<>());
             }
-            System.out.println();
         }
 
-        callStack.setCallback(this);
+        //
+        calculateCostMatrix();
 
-        //register MQTT
-        messenger = new Messenger(CLIENT_ID, buildCallback());
-        messenger.connect();
+        //register MQTT and connect
+        publisher = new Messenger(CLIENT_ID + "Pub", publisherCallBack());
+        subscriber = new Messenger(CLIENT_ID, subscriberCallBack());
+        subscriber.connect();
 
-        //subscribe to all
+        //subscribe to all required topics
         try {
-            messenger.subscribe("Monitor/#");
-            messenger.subscribe("Call/Floor/#");
-            messenger.subscribe("Call/Hall/#");
+            subscriber.subscribe("RouteList");
+            subscriber.subscribe("Monitor/#");
+            //messenger.subscribe("Call/Floor/#");
+            //messenger.subscribe("Call/Hall/#");
         } catch (MqttException e) {
             e.printStackTrace();
+        }
+    }
+
+    private MqttCallback publisherCallBack() {
+        return new MqttCallback() {
+            @Override
+            public void connectionLost(Throwable throwable) {
+                System.out.println("CONNECTION LOST");
+                try {
+                    subscriber.wait(10000);
+                    subscriber.connect();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void messageArrived(String s, MqttMessage mqttMessage) throws Exception {
+                //not used in publisher
+            }
+
+            @Override
+            public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
+                System.out.println("Message delivered to broker");
+            }
+        };
+    }
+
+    private void calculateCostMatrix() {
+        for(byte row = 0; row < NO_OF_FLOORS; row++){
+            for(byte col = 0; col < NO_OF_FLOORS; col++){
+                if(row == col){
+                    COST_MATRIX[row][col] = 0;
+                }else if(row < col){
+                    //going up
+                    COST_MATRIX[row][col] = BASE_WEIGHTING + ((col - row) * TRAVEL_UP_MULTIPLIER) - (Math.pow((col - row)* FLOOR_DISTANCE_MULTIPLIER,2) );
+                }else{
+                    //going down
+                    COST_MATRIX[row][col] = BASE_WEIGHTING + ((row - col) * TRAVEL_DOWN_MULTIPLIER) - (Math.pow((row - col) * FLOOR_DISTANCE_MULTIPLIER,2));
+                }
+            }
+        }
+
+        //print out - 2dp (precision not shown)
+        for(byte row = 0; row < NO_OF_FLOORS; row++){
+            for(byte col = 0; col < NO_OF_FLOORS; col++){
+                System.out.print(String.format("[%1$,.2f]",COST_MATRIX[row][col]));
+            }
+            System.out.println();
         }
     }
 
@@ -88,94 +138,17 @@ public class Algorithm implements ICallstackCallback {
         return bits;
     }
 
-    //needs more logic to include the factor of 0/G only travelling up
-    //and 8/top floor only travelling down
-    private void computeCosts() {
-
-        //clear possible routes
-        possibleRoutes.clear();
-        //work out routes first with recursion
-        permute();
-
-        int tempCurrentFloor = getCurrentFloor();
-
-        int bestRoute = 0;
-        int bestRouteTime = 0;
-        String bestRouteString = "";
-
-        for(List<Integer> route : possibleRoutes){
-            int routeTotalTime = 0;
-            String routeString = String.valueOf(getCurrentFloor());
-            for(int floorToVisit : route){
-                //abs diff between current and next
-                int floorDiff = Math.abs(getCurrentFloor() - floorToVisit);
-                routeTotalTime += (floorDiff * FLOOR_TRAVEL_TIME) +
-                        ((DOOR_OPEN_CLOSE_TIME * 2) * floorDiff);
-
-                //set current floor to floorToVisit (now visited)
-                routeString += " => " + String.valueOf(floorToVisit);
-                setCurrentFloor(floorToVisit);
-            }
-            //print route
-            int routeNum = (possibleRoutes.indexOf(route) + 1);
-            System.out.println("Route: " + routeNum);
-            System.out.println("Total time (ms): " + routeTotalTime);
-
-            //set best route
-            //change to setters
-            if (bestRouteTime == 0 || routeTotalTime < bestRouteTime){
-                bestRoute = routeNum;
-                bestRouteTime = routeTotalTime;
-                bestRouteString = routeString;
-            }
-
-            //reset current floor to original
-            setCurrentFloor(tempCurrentFloor);
-        }
-
-        //best route
-        System.out.println(String.format("Best route: %d\nRoute time: %d\nRoute: %s", bestRoute, bestRouteTime, bestRouteString));
-    }
-
-    private void permute(){
-        permute(0);
-    }
-
-    private void permute(int index) {
-        if (index == callStack.size())
-        {
-            List<Integer> route = new LinkedList<Integer>();
-            for (int i = 0; i < callStack.size(); i++)
-            {
-                System.out.print(" [" + callStack.get(i) + "] ");
-                //add to list
-                route.add(callStack.get(i));
-            }
-            System.out.println();
-            possibleRoutes.add(route);
-        }
-        else
-        {
-            for (int i = index; i < callStack.size(); i++)
-            {
-                int temp = callStack.get(index);
-                callStack.set(index, callStack.get(i));
-                callStack.set(i, temp);
-
-                permute(index + 1);
-
-                temp = callStack.get(index);
-                callStack.set(index, callStack.get(i));
-                callStack.set(i,temp);
-            }
-        }
-    }
-
-    private MqttCallback buildCallback() {
+    private MqttCallback subscriberCallBack() {
         return new MqttCallback() {
             @Override
             public void connectionLost(Throwable throwable) {
                 System.out.println("CONNECTION LOST");
+                try {
+                    subscriber.wait(10000);
+                    subscriber.connect();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
 
             @Override
@@ -187,54 +160,102 @@ public class Algorithm implements ICallstackCallback {
                 System.out.println("Received Data: " + jsonData);
                 System.out.println();
 
-                try {
-                    FloorData data = DataInterpreter.read(jsonData);
-
-                    //depending on topic of data do something
-                    //finalise topic values
-                    switch(topic.substring(0, topic.length() - 1)){
-                        case "Monitor/":
-
-                            //store data
-                            monitoringData.put(data);
-
-                            //output
-                            System.out.println("Storing floor data...");
-                            System.out.println(data.toString());
-                            System.out.println();
-
-
-                            break;
-                        //test
-                        case "Call/Floor/":
-                            System.out.println("Floor call received");
-                            callStack.add(data.getFloor());
-                            break;
-
-                        case "Call/Hall/":
-                            System.out.println("Hall call received");
-                            callStack.add(data.getFloor());
-                            break;
+                //check topic
+                if(topic.contains("RouteList")){
+                    RouteData rd = DataInterpreter.readRouteData(jsonData);
+                    BitSet b = new BitSet();
+                    rd.getFloorsToVisit().stream().forEach(b::set);
+                    computeOptimum(rd, b);
+                }else if(topic.contains("Monitor")){
+                    FloorData data = DataInterpreter.readFloorData(jsonData);
+                    if(monitoringData.size() < 1){
+                        monitoringData.add(data);
+                    }else{
+                        dsHelper.store(monitoringData);
                     }
-
-                } catch (Exception e) {
-                    e.printStackTrace();
                 }
             }
 
             @Override
             public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
-
+                //not used in subscriber
             }
         };
     }
 
-    @Override
-    public void stackUpdated() {
-        if(!callStack.isEmpty()) {
-            //output
-            System.out.println("CALLBACK FIRED");
-            computeCosts();
+    private void computeOptimum(RouteData rd, BitSet b) {
+        //look-up bitset in optimum map
+        List<Integer> optimum = optimumRouteLookup.get(b).get(rd.getCurrentFloor());
+        if (optimum.size() == 0){
+            System.out.println("COMPUTING OPTIMUM");
+
+            List<List<Integer>> permutations = permutationsOf(rd.getFloorsToVisit());
+
+            double bestCost = 0;
+            double currentCost;
+            List<Integer> bestRoute = new ArrayList<>();
+
+            for(List<Integer> ftv : permutations){
+                currentCost = 0;
+                setCurrentFloor(rd.getCurrentFloor());
+
+                System.out.print("Route: " + permutations.indexOf(ftv) + " - ");
+                for(int f : ftv){
+
+                    //look up current floor
+                    currentCost += COST_MATRIX[getCurrentFloor()][f];
+                    setCurrentFloor(f);
+
+                    System.out.print(f + " ");
+                }
+
+                if(bestCost == 0 || currentCost < bestCost){
+                    bestCost = currentCost;
+                    bestRoute = ftv;
+                }
+
+                System.out.println();
+                System.out.println("Cost: " + currentCost);
+            }
+
+            System.out.println("Best Cost: " + bestCost);
+            System.out.println("Best Route: " + permutations.indexOf(bestRoute));
+
+            //set best in map
+            optimumRouteLookup.get(b).put(rd.getCurrentFloor(), bestRoute);
+            //set optimum
+            optimum = bestRoute;
         }
+        System.out.println("RETRIEVED + PUBLISHING OPTIMUM");
+        try {
+            publisher.connect();
+            publisher.publish("OptimisedRouting", optimum);
+            publisher.disconnect();
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private List<List<Integer>> permutationsOf(List<Integer> list) {
+        return permutationsOf(list, 0, list.size());
+    }
+
+    private List<List<Integer>> permutationsOf(List<Integer> list, int start, int end) {
+        List<List<Integer>> permutations = new ArrayList<>();
+        if (start < end) {
+            Integer nextInt = list.get(start);
+            if (start == end - 1) {
+                permutations.add(Arrays.asList(nextInt));
+            } else {
+                for (List<Integer> subList : permutationsOf(list, start + 1, end)) {
+                    for (int i = 0; i <= subList.size(); i++) {
+                        List<Integer> newList = new ArrayList<>(subList);
+                        newList.add(i, nextInt);
+                        permutations.add(newList);
+                    }
+                }
+            }
+        }
+        return permutations;
     }
 }

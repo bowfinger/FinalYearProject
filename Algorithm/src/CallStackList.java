@@ -24,7 +24,7 @@ public class CallStackList<T> extends LinkedList<T> {
         }
 
         return success;
-    };
+    }
 
     @Override
     public void add(int index, T object) {
@@ -34,7 +34,7 @@ public class CallStackList<T> extends LinkedList<T> {
         super.add(index, object);
         // Do some action here
         callback.stackUpdated();
-    };
+    }
 
     @Override
     public T remove(int index) {
