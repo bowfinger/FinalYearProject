@@ -11,5 +11,6 @@
     <orderEntry type="module" module-name="MQTT" />
     <orderEntry type="library" name="Gradle: org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.0.2" level="project" />
     <orderEntry type="module" module-name="Monitoring" />
+    <orderEntry type="module" module-name="Algorithm" />
   </component>
 </module>
