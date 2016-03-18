@@ -16,7 +16,7 @@ public class EntryPoint {
             }
         }
 
-        OpenCVApplication app = new OpenCVApplication(AppMode.DEBUG, floorNum);
+        OpenCVApplication app = new OpenCVApplication(floorNum);
         app.run();
 
         //using dummy publisher to generate counts of people waiting at floors every 1 minute

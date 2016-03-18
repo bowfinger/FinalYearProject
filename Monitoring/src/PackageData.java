@@ -47,7 +47,7 @@ public class PackageData implements Consumer<List<MatOfPoint>> {
         //publish first data then sleep for 60 seconds
         try {
             messenger.publish(String.format("Monitor/%d", floorId), data);
-            Thread.sleep(60000);
+            Thread.sleep(10000);
         } catch (MqttException | InterruptedException e) {
             e.printStackTrace();
         }

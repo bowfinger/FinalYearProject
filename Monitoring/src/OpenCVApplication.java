@@ -9,21 +9,16 @@ import java.util.stream.Stream;
 public class OpenCVApplication {
 
     private FrameSupplier supplier;
-    private static Mat initialFrame;
-    //private int floorId;
-
     private Preprocessor preprocessor;
     private ComputeContours computeContours;
     private PackageData packageData;
 
     public OpenCVApplication(int floorId){
-        //this.floorId = floorId;
         //load OpenCV lib
         System.loadLibrary( Core.NATIVE_LIBRARY_NAME );
 
         //Instantiate variables
         supplier = new FrameSupplier();
-        initialFrame = new Mat();
         preprocessor = new Preprocessor();
         computeContours = new ComputeContours();
         try {
@@ -33,19 +28,14 @@ public class OpenCVApplication {
         }
     }
 
-    public static Mat getInitialFrame(){
-        return initialFrame;
-    }
-
     public void run() throws MqttException {
 
         //set stream pipeline
         Stream<Mat> frameStream = Stream.generate(supplier);
 
-        //grab initial frame
+        //allow init of camera
         try {
-            Thread.sleep(5000);
-            initialFrame = new Preprocessor().apply(supplier.get());
+            Thread.sleep(3000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
