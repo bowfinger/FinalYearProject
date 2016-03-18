@@ -9,6 +9,10 @@ public class RouteData {
     private int currentFloor;
     private List<Integer> floorsToVisit = new ArrayList<>();
 
+    public RouteData(){
+
+    }
+
     public RouteData(int currentFloor, List<Integer> floorsToVisit){
         this.currentFloor = currentFloor;
         this.floorsToVisit = floorsToVisit;
@@ -28,5 +32,9 @@ public class RouteData {
 
     public void setCurrentFloor(int currentFloor) {
         this.currentFloor = currentFloor;
+    }
+
+    public void addFloorToVisit(int floorNum){
+        this.floorsToVisit.add(floorNum);
     }
 }
