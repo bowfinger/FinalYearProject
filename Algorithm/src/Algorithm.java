@@ -29,13 +29,12 @@ public class Algorithm {
     private static final double[][] COST_MATRIX = new double[8][8];
     private int currentFloor = 0;
 
-    private List<BitSet> permutations = new LinkedList<>();
+    public List<BitSet> permutations = new LinkedList<>();
     private Map<BitSet, HashMap<Integer, List<Integer>>> optimumRouteLookup = new HashMap<>();
 
     private List<FloorData> monitoringData = new ArrayList<>();
 
-    public void run() throws MqttException {
-
+    public Algorithm(){
         // Create permutations
         for (int i = 0; i < Math.pow(2,NO_OF_FLOORS); i++) {
             permutations.add(convert(i));
@@ -48,9 +47,12 @@ public class Algorithm {
                 optimumRouteLookup.get(permutation).put(i, new ArrayList<>());
             }
         }
-
-        //
         calculateCostMatrix();
+    }
+
+    public void run() throws MqttException {
+
+
 
         //register MQTT and connect
         publisher = new Messenger(CLIENT_ID + "Pub", publisherCallBack());
@@ -109,12 +111,12 @@ public class Algorithm {
         }
 
         //print out - 2dp (precision not shown)
-        for(byte row = 0; row < NO_OF_FLOORS; row++){
-            for(byte col = 0; col < NO_OF_FLOORS; col++){
-                System.out.print(String.format("[%1$,.2f]",COST_MATRIX[row][col]));
-            }
-            System.out.println();
-        }
+//        for(byte row = 0; row < NO_OF_FLOORS; row++){
+//            for(byte col = 0; col < NO_OF_FLOORS; col++){
+//                System.out.print(String.format("[%1$,.2f]",COST_MATRIX[row][col]));
+//            }
+//            System.out.println();
+//        }
     }
 
     public void setCurrentFloor(int currentFloor) {
@@ -183,11 +185,12 @@ public class Algorithm {
         };
     }
 
-    private void computeOptimum(RouteData rd, BitSet b) {
+    //private?
+    public void computeOptimum(RouteData rd, BitSet b) {
         //look-up bitset in optimum map
         List<Integer> optimum = optimumRouteLookup.get(b).get(rd.getCurrentFloor());
         if (optimum.size() == 0){
-            System.out.println("COMPUTING OPTIMUM");
+            //System.out.println("COMPUTING OPTIMUM");
 
             List<List<Integer>> permutations = permutationsOf(rd.getFloorsToVisit());
 
@@ -199,14 +202,14 @@ public class Algorithm {
                 currentCost = 0;
                 setCurrentFloor(rd.getCurrentFloor());
 
-                System.out.print("Route: " + permutations.indexOf(ftv) + " - ");
+                //System.out.print("Route: " + permutations.indexOf(ftv) + " - ");
                 for(int f : ftv){
 
                     //look up current floor
                     currentCost += COST_MATRIX[getCurrentFloor()][f];
                     setCurrentFloor(f);
 
-                    System.out.print(f + " ");
+                    //System.out.print(f + " ");
                 }
 
                 if(bestCost == 0 || currentCost < bestCost){
@@ -214,26 +217,26 @@ public class Algorithm {
                     bestRoute = ftv;
                 }
 
-                System.out.println();
-                System.out.println("Cost: " + currentCost);
+                //System.out.println();
+                //System.out.println("Cost: " + currentCost);
             }
 
-            System.out.println("Best Cost: " + bestCost);
-            System.out.println("Best Route: " + permutations.indexOf(bestRoute));
+            //System.out.println("Best Cost: " + bestCost);
+            //System.out.println("Best Route: " + permutations.indexOf(bestRoute));
 
             //set best in map
             optimumRouteLookup.get(b).put(rd.getCurrentFloor(), bestRoute);
             //set optimum
             optimum = bestRoute;
         }
-        System.out.println("RETRIEVED + PUBLISHING OPTIMUM");
-        try {
-            publisher.connect();
-            publisher.publish("OptimisedRouting", optimum);
-            publisher.disconnect();
-        } catch (MqttException e) {
-            e.printStackTrace();
-        }
+        //System.out.println("RETRIEVED + PUBLISHING OPTIMUM");
+//        try {
+//            publisher.connect();
+//            publisher.publish("OptimisedRouting", optimum);
+//            publisher.disconnect();
+//        } catch (MqttException e) {
+//            e.printStackTrace();
+//        }
     }
 
     private List<List<Integer>> permutationsOf(List<Integer> list) {
