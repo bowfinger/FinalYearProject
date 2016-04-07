@@ -1,12 +1,13 @@
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
+import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.opencv.core.*;
+//import org.opencv.core.Algorithm;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.objdetect.CascadeClassifier;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by Jamie on 25/02/2016.
@@ -45,27 +46,27 @@ public class TestSuite {
         //System.out.println(points1); // > 0
 
         //compute contours - passing image
-        String[] imgPath = {
-                "F:/OpenCVTestImages/0.jpg",
-                "F:/OpenCVTestImages/1.jpg",
-                "F:/OpenCVTestImages/2.jpg",
-                "F:/OpenCVTestImages/5.jpg"
-        };
-        ComputeContours cc = new ComputeContours();
-        List<MatOfPoint> contours;
-
-        for(int iterations = 0; iterations < 1000; iterations++){
-            for(String file : imgPath){
-                Mat img = Imgcodecs.imread(file);
-                contours = cc.apply(img);
-                if((file.contains("0.jpg") && contours.size() != 0) ||
-                        (file.contains("1.jpg") && contours.size() != 1)||
-                        (file.contains("2.jpg") && contours.size() != 2)||
-                        (file.contains("5.jpg") && contours.size() != 5)){
-                    System.out.println("FAILED - " + file);
-                }
-            }
-        }
+//        String[] imgPath = {
+//                "F:/OpenCVTestImages/0.jpg",
+//                "F:/OpenCVTestImages/1.jpg",
+//                "F:/OpenCVTestImages/2.jpg",
+//                "F:/OpenCVTestImages/5.jpg"
+//        };
+//        ComputeContours cc = new ComputeContours();
+//        List<MatOfPoint> contours;
+//
+//        for(int iterations = 0; iterations < 1000; iterations++){
+//            for(String file : imgPath){
+//                Mat img = Imgcodecs.imread(file);
+//                contours = cc.apply(img);
+//                if((file.contains("0.jpg") && contours.size() != 0) ||
+//                        (file.contains("1.jpg") && contours.size() != 1)||
+//                        (file.contains("2.jpg") && contours.size() != 2)||
+//                        (file.contains("5.jpg") && contours.size() != 5)){
+//                    System.out.println("FAILED - " + file);
+//                }
+//            }
+//        }
 
         //package data
 //        Point p = new Point(1,1);
@@ -150,13 +151,35 @@ public class TestSuite {
         }
         */
 
+        /////////////////////
+        // ALGORITHM TESTS //
+        /////////////////////
+
+//        Algorithm a =  new Algorithm();
+//
+//        //get cost matrix and assert size
+//        //checks all array positions to ensure square array
+//        double[][] matrix = a.getCostMatrix();
+//        int totalMatrixPos = (int)Math.pow(a.getNoOfFloors(),2);
+//        int testMatrixPos = 0;
+//        for(int i = 0; i < matrix.length; i++){
+//            testMatrixPos += matrix[i].length;
+//        }
+//        if (totalMatrixPos != testMatrixPos) throw new AssertionError();
+//
+//        //get print out cost matrix
+//        a.printCostMatrix();
+
 
         ////////////////////////
         // BENCHMARKING TESTS //
         ////////////////////////
 
-//        Date now = new Date();
-//        FloorData fd = new FloorData(1,now,10);
+        ArrayList<Long> startTimes = new ArrayList<>();
+        ArrayList<Long> endTimes = new ArrayList<>();
+
+        Date now = new Date();
+        FloorData fd = new FloorData(1,now,10);
 
 
         long startBenchmarkTime = System.nanoTime();
@@ -205,7 +228,7 @@ public class TestSuite {
 //        subscriber.connect();
 //        subscriber.subscribe("TEST");
 //
-//        for(int i = 0; i<10; i++){
+//        for(int i = 0; i<11; i++){
 //            try {
 //                startTimes.add(System.nanoTime());
 //                publisher.connect();
@@ -214,7 +237,7 @@ public class TestSuite {
 //            } catch (MqttException e) {
 //                e.printStackTrace();
 //            }
-//            Thread.sleep(5000);
+//            //Thread.sleep(5000);
 //        }
 //
 //        //ArrayList<Long> times = new ArrayList<>();
@@ -225,131 +248,132 @@ public class TestSuite {
 //        }
 
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//        List<RouteData> dataList = new ArrayList<>();
-//        Algorithm a = new Algorithm();
-//
-//        for(int i = 0; i < 8; i++) {
-//            for (BitSet b : a.permutations) {
-//                RouteData rd = new RouteData();
-//                rd.setCurrentFloor(i);
-//                for (int j = 0; j < 8; j++) {
-//                    if (b.get(j)) {
-//                        rd.addFloorToVisit(j);
-//                    }
+        List<RouteData> dataList = new ArrayList<>();
+        Algorithm a = new Algorithm();
+        BasicAlgorithm ba = new BasicAlgorithm();
+
+        for(int i = 0; i < 8; i++) {
+            for (BitSet b : a.getPermutations()) {
+                RouteData rd = new RouteData();
+                rd.setCurrentFloor(i);
+                for (int j = 0; j < 8; j++) {
+                    if (b.get(j)) {
+                        rd.addFloorToVisit(j);
+                    }
+                }
+                dataList.add(rd);
+            }
+        }
+
+        System.out.println(dataList.size());
+
+        class Pass{
+            private int number;
+            private long min;
+            private long max;
+            private long avg;
+
+            public Pass(int number, long min, long max, long avg){
+                this.number = number;
+                this.min = min;
+                this.max = max;
+                this.avg = avg;
+            }
+
+            public int getNumber() {
+                return number;
+            }
+
+            public long getMin() {
+                return min;
+            }
+
+            public long getMax() {
+                return max;
+            }
+
+            public long getAvg() {
+                return avg;
+            }
+        }
+
+        class BenchmarkTest{
+            private int number;
+            private List<Pass> passes = new ArrayList<>();
+            public BenchmarkTest(int testNum){
+                this.number = testNum;
+            }
+
+            public int getNumber() {
+                return number;
+            }
+
+            public List<Pass> getPasses() {
+                return passes;
+            }
+
+            public void addPass(Pass p){
+                this.passes.add(p);
+            }
+        }
+
+
+
+        List<BenchmarkTest> testBenchmarks = new ArrayList<>();
+
+        //10 tests - 2 passes
+        for(int tests = 1; tests <= 100; tests++){
+            //a = new Algorithm();//new algorithm instance to reset calculated routes
+            ba = new BasicAlgorithm();
+            BenchmarkTest test = new BenchmarkTest(tests);
+            for(int pass = 1; pass <= 2; pass++){
+                startTimes = new ArrayList<>();
+                endTimes = new ArrayList<>();
+//                if(pass == 0){
+//                    System.out.println("PASS 1 - CALCULATIONS REQUIRED");
+//                }else{
+//                    System.out.println("PASS 2 - RECALLING FROM MAP");
 //                }
-//                dataList.add(rd);
-//            }
-//        }
-//
-//        class Pass{
-//            private int number;
-//            private long min;
-//            private long max;
-//            private long avg;
-//
-//            public Pass(){}
-//
-//            public Pass(int number, long min, long max, long avg){
-//                this.number = number;
-//                this.min = min;
-//                this.max = max;
-//                this.avg = avg;
-//            }
-//
-//            public int getNumber() {
-//                return number;
-//            }
-//
-//            public long getMin() {
-//                return min;
-//            }
-//
-//            public long getMax() {
-//                return max;
-//            }
-//
-//            public long getAvg() {
-//                return avg;
-//            }
-//        }
-//
-//        class BenchmarkTest{
-//            private int number;
-//            private List<Pass> passes = new ArrayList<>();
-//            public BenchmarkTest(int testNum){
-//                this.number = testNum;
-//            }
-//
-//            public int getNumber() {
-//                return number;
-//            }
-//
-//            public List<Pass> getPasses() {
-//                return passes;
-//            }
-//
-//            public void addPass(Pass p){
-//                this.passes.add(p);
-//            }
-//        }
-//
-//
-//
-//        List<BenchmarkTest> testBenchmarks = new ArrayList<>();
-//
-//        //10 tests - 2 passes
-//        for(int tests = 1; tests <= 100; tests++){
-//            a = new Algorithm();//new algorithm instance to reset calculated routes
-//            BenchmarkTest test = new BenchmarkTest(tests);
-//            for(int pass = 1; pass <= 2; pass++){
-//                final ArrayList<Long> startTimes = new ArrayList<>();
-//                final ArrayList<Long> endTimes = new ArrayList<>();
-////                if(pass == 0){
-////                    System.out.println("PASS 1 - CALCULATIONS REQUIRED");
-////                }else{
-////                    System.out.println("PASS 2 - RECALLING FROM MAP");
-////                }
-//                for(RouteData rd : dataList){
-//                    BitSet bs = new BitSet();
-//                    rd.getFloorsToVisit().stream().forEach(bs::set);
-//                    startTimes.add(System.nanoTime());
-//                    a.computeOptimum(rd, bs);
-//                    endTimes.add(System.nanoTime());
-//                }
-//
-//                long min = 0L;
-//                long max = 0L;
-//                long sum = 0L;
-//
-//                for(int i = 0; i < startTimes.size(); i++){
-//                    long calculated = ((endTimes.get(i) - benchmarkDiff) - (startTimes.get(i) - benchmarkDiff));
-//                    sum+=calculated;
-//                    if(min == 0L || calculated < min){
-//                        min = calculated;
-//                    }
-//                    if(max == 0L || calculated > max){
-//                        max = calculated;
-//                    }
-//                    //System.out.println(calculated);
-//                }
-//
-//                long average = sum/startTimes.size();
-//                //System.out.println("MIN: " + min);
-//                //System.out.println("MAX: " + max);
-//                //System.out.println("AVG: " + average);
-//
-//                test.addPass(new Pass(pass, min, max, average));
-//            }
-//            testBenchmarks.add(test);
-//        }
-//
-//        System.out.println("Test\tPass\tMin\t\tMax\t\t\t\tAvg");
-//
-//        for(BenchmarkTest test : testBenchmarks){
-//            for(Pass p : test.getPasses()){
-//                System.out.println(String.format("%d\t\t%d\t\t%d\t\t%d\t\t%d", test.getNumber(), p.getNumber(), p.getMin(), p.getMax(), p.getAvg()));
-//            }
-//        }
+                for(RouteData rd : dataList){
+                    startTimes.add(System.nanoTime());
+                    //a.computeOptimum(rd);
+                    ba.computeOptimum(rd);
+                    endTimes.add(System.nanoTime());
+                }
+
+                long min = 0L;
+                long max = 0L;
+                long sum = 0L;
+
+                for(int i = 0; i < startTimes.size(); i++){
+                    long calculated = ((endTimes.get(i) - benchmarkDiff) - (startTimes.get(i) - benchmarkDiff));
+                    sum+=calculated;
+                    if(min == 0L || calculated < min){
+                        min = calculated;
+                    }
+                    if(max == 0L || calculated > max){
+                        max = calculated;
+                    }
+                    //System.out.println(calculated);
+                }
+
+                long average = sum/startTimes.size();
+                //System.out.println("MIN: " + min);
+                //System.out.println("MAX: " + max);
+                //System.out.println("AVG: " + average);
+
+                test.addPass(new Pass(pass, min, max, average));
+            }
+            testBenchmarks.add(test);
+        }
+
+        System.out.println("Test\tPass\tMin\t\tMax\t\t\t\tAvg");
+
+        for(BenchmarkTest test : testBenchmarks){
+            for(Pass p : test.getPasses()){
+                System.out.println(String.format("%d\t\t%d\t\t%d\t\t%d\t\t%d", test.getNumber(), p.getNumber(), p.getMin(), p.getMax(), p.getAvg()));
+            }
+        }
 
     }
 }

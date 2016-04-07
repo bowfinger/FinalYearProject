@@ -26,10 +26,10 @@ public class Algorithm {
     private static final double TRAVEL_DOWN_MULTIPLIER = 0.8;
     private static final double FLOOR_DISTANCE_MULTIPLIER = 0.1;
     private static final int NO_OF_FLOORS = 8;
-    private static final double[][] COST_MATRIX = new double[8][8];
+    private static final double[][] COST_MATRIX = new double[NO_OF_FLOORS][NO_OF_FLOORS];
     private int currentFloor = 0;
 
-    public List<BitSet> permutations = new LinkedList<>();
+    private List<BitSet> permutations = new LinkedList<>();
     private Map<BitSet, HashMap<Integer, List<Integer>>> optimumRouteLookup = new HashMap<>();
 
     private List<FloorData> monitoringData = new ArrayList<>();
@@ -51,9 +51,6 @@ public class Algorithm {
     }
 
     public void run() throws MqttException {
-
-
-
         //register MQTT and connect
         publisher = new Messenger(CLIENT_ID + "Pub", publisherCallBack());
         subscriber = new Messenger(CLIENT_ID, subscriberCallBack());
@@ -68,6 +65,29 @@ public class Algorithm {
         } catch (MqttException e) {
             e.printStackTrace();
         }
+    }
+
+    //used to access private member for testing
+    public double[][] getCostMatrix(){
+        return COST_MATRIX;
+    }
+
+    public List<BitSet> getPermutations(){
+        return this.permutations;
+    }
+
+    public void printCostMatrix(){
+        //print out - 2dp (precision not shown)
+        for(byte row = 0; row < NO_OF_FLOORS; row++){
+            for(byte col = 0; col < NO_OF_FLOORS; col++){
+                System.out.print(String.format("[%1$,.2f]",COST_MATRIX[row][col]));
+            }
+            System.out.println();
+        }
+    }
+
+    public int getNoOfFloors(){
+        return NO_OF_FLOORS;
     }
 
     private MqttCallback publisherCallBack() {
@@ -102,21 +122,17 @@ public class Algorithm {
                     COST_MATRIX[row][col] = 0;
                 }else if(row < col){
                     //going up
-                    COST_MATRIX[row][col] = BASE_WEIGHTING + ((col - row) * TRAVEL_UP_MULTIPLIER) - (Math.pow((col - row)* FLOOR_DISTANCE_MULTIPLIER,2) );
+                    COST_MATRIX[row][col] = BASE_WEIGHTING +
+                            ((col - row) * TRAVEL_UP_MULTIPLIER) -
+                            (Math.pow((col - row)* FLOOR_DISTANCE_MULTIPLIER,2) );
                 }else{
                     //going down
-                    COST_MATRIX[row][col] = BASE_WEIGHTING + ((row - col) * TRAVEL_DOWN_MULTIPLIER) - (Math.pow((row - col) * FLOOR_DISTANCE_MULTIPLIER,2));
+                    COST_MATRIX[row][col] = BASE_WEIGHTING +
+                            ((row - col) * TRAVEL_DOWN_MULTIPLIER) -
+                            (Math.pow((row - col) * FLOOR_DISTANCE_MULTIPLIER,2));
                 }
             }
         }
-
-        //print out - 2dp (precision not shown)
-//        for(byte row = 0; row < NO_OF_FLOORS; row++){
-//            for(byte col = 0; col < NO_OF_FLOORS; col++){
-//                System.out.print(String.format("[%1$,.2f]",COST_MATRIX[row][col]));
-//            }
-//            System.out.println();
-//        }
     }
 
     public void setCurrentFloor(int currentFloor) {
@@ -127,7 +143,7 @@ public class Algorithm {
         return this.currentFloor;
     }
 
-    public static BitSet convert(long value) {
+    public BitSet convert(long value) {
         BitSet bits = new BitSet();
         int index = 0;
         while (value != 0L) {
@@ -165,9 +181,9 @@ public class Algorithm {
                 //check topic
                 if(topic.contains("RouteList")){
                     RouteData rd = DataInterpreter.readRouteData(jsonData);
-                    BitSet b = new BitSet();
-                    rd.getFloorsToVisit().stream().forEach(b::set);
-                    computeOptimum(rd, b);
+                    publisher.connect();
+                    publisher.publish("OptimisedRouting", computeOptimum(rd));
+                    publisher.disconnect();
                 }else if(topic.contains("Monitor")){
                     FloorData data = DataInterpreter.readFloorData(jsonData);
                     if(monitoringData.size() < 1){
@@ -186,9 +202,11 @@ public class Algorithm {
     }
 
     //private?
-    public void computeOptimum(RouteData rd, BitSet b) {
+    public List<Integer> computeOptimum(RouteData rd) {
+        BitSet bs = new BitSet();
+        rd.getFloorsToVisit().stream().forEach(bs::set);
         //look-up bitset in optimum map
-        List<Integer> optimum = optimumRouteLookup.get(b).get(rd.getCurrentFloor());
+        List<Integer> optimum = optimumRouteLookup.get(bs).get(rd.getCurrentFloor());
         if (optimum.size() == 0){
             //System.out.println("COMPUTING OPTIMUM");
 
@@ -196,7 +214,7 @@ public class Algorithm {
 
             double bestCost = 0;
             double currentCost;
-            List<Integer> bestRoute = new ArrayList<>();
+            //List<Integer> bestRoute = new ArrayList<>();
 
             for(List<Integer> ftv : permutations){
                 currentCost = 0;
@@ -214,7 +232,7 @@ public class Algorithm {
 
                 if(bestCost == 0 || currentCost < bestCost){
                     bestCost = currentCost;
-                    bestRoute = ftv;
+                    optimum = ftv;
                 }
 
                 //System.out.println();
@@ -225,21 +243,12 @@ public class Algorithm {
             //System.out.println("Best Route: " + permutations.indexOf(bestRoute));
 
             //set best in map
-            optimumRouteLookup.get(b).put(rd.getCurrentFloor(), bestRoute);
-            //set optimum
-            optimum = bestRoute;
+            optimumRouteLookup.get(bs).put(rd.getCurrentFloor(), optimum);
         }
-        //System.out.println("RETRIEVED + PUBLISHING OPTIMUM");
-//        try {
-//            publisher.connect();
-//            publisher.publish("OptimisedRouting", optimum);
-//            publisher.disconnect();
-//        } catch (MqttException e) {
-//            e.printStackTrace();
-//        }
+        return optimum;
     }
 
-    private List<List<Integer>> permutationsOf(List<Integer> list) {
+    public List<List<Integer>> permutationsOf(List<Integer> list) {
         return permutationsOf(list, 0, list.size());
     }
 
