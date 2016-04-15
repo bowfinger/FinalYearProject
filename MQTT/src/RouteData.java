@@ -7,22 +7,22 @@ import java.util.List;
 public class RouteData {
 
     private int currentFloor;
-    private List<Integer> floorsToVisit = new ArrayList<>();
+    private List<Call> floorsToVisit = new ArrayList<>();
 
     public RouteData(){
 
     }
 
-    public RouteData(int currentFloor, List<Integer> floorsToVisit){
+    public RouteData(int currentFloor, List<Call> calls){
         this.currentFloor = currentFloor;
         this.floorsToVisit = floorsToVisit;
     }
 
-    public List<Integer> getFloorsToVisit() {
+    public List<Call> getFloorsToVisit() {
         return floorsToVisit;
     }
 
-    public void setFloorsToVisit(ArrayList<Integer> floorsToVisit) {
+    public void setFloorsToVisit(ArrayList<Call> floorsToVisit) {
         this.floorsToVisit = floorsToVisit;
     }
 
@@ -34,7 +34,7 @@ public class RouteData {
         this.currentFloor = currentFloor;
     }
 
-    public void addFloorToVisit(int floorNum){
-        this.floorsToVisit.add(floorNum);
+    public void addFloorToVisit(Call call){
+        this.floorsToVisit.add(call);
     }
 }

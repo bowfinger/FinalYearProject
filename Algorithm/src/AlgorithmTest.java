@@ -53,7 +53,11 @@ public class AlgorithmTest extends TestCase {
     }
 
     public void testComputeOptimum() throws Exception {
-        RouteData routeData = new RouteData(3, new ArrayList<>(Arrays.asList(1,2,3)));
+        ArrayList<Call> calls = new ArrayList<>();
+        calls.add(new Call(1, CallType.CAR));
+        calls.add(new Call(2, CallType.CAR));
+        calls.add(new Call(3, CallType.CAR));
+        RouteData routeData = new RouteData(3, calls);
         List<Integer> optimum = a.computeOptimum(routeData);
         assertNotNull(optimum);
         assertTrue(optimum.size() > 0);

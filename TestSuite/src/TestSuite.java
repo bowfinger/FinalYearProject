@@ -258,7 +258,7 @@ public class TestSuite {
                 rd.setCurrentFloor(i);
                 for (int j = 0; j < 8; j++) {
                     if (b.get(j)) {
-                        rd.addFloorToVisit(j);
+                        rd.addFloorToVisit(new Call(j, CallType.CAR));
                     }
                 }
                 dataList.add(rd);

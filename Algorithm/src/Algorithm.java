@@ -16,7 +16,7 @@ public class Algorithm {
 
     private Messenger publisher;
     private Messenger subscriber;
-    private DataStorageHelper dsHelper;
+    private DataStorageHelper dsHelper =  new DataStorageHelper();
 
     private static final String CLIENT_ID = "ALGORITHM";
 
@@ -60,6 +60,7 @@ public class Algorithm {
         try {
             subscriber.subscribe("RouteList");
             subscriber.subscribe("Monitor/#");
+            //old subscriptions
             //messenger.subscribe("Call/Floor/#");
             //messenger.subscribe("Call/Hall/#");
         } catch (MqttException e) {
@@ -186,7 +187,7 @@ public class Algorithm {
                     publisher.disconnect();
                 }else if(topic.contains("Monitor")){
                     FloorData data = DataInterpreter.readFloorData(jsonData);
-                    if(monitoringData.size() < 1){
+                    if(monitoringData.size() < 100){
                         monitoringData.add(data);
                     }else{
                         dsHelper.store(monitoringData);
@@ -203,14 +204,18 @@ public class Algorithm {
 
     //private?
     public List<Integer> computeOptimum(RouteData rd) {
+        //check hall calls against latest data
+        List<Integer> floorsToVisit = optimiseUsingMonitoringData(rd.getFloorsToVisit());
+
+
         BitSet bs = new BitSet();
-        rd.getFloorsToVisit().stream().forEach(bs::set);
+        floorsToVisit.stream().forEach(bs::set);
         //look-up bitset in optimum map
         List<Integer> optimum = optimumRouteLookup.get(bs).get(rd.getCurrentFloor());
         if (optimum.size() == 0){
             //System.out.println("COMPUTING OPTIMUM");
 
-            List<List<Integer>> permutations = permutationsOf(rd.getFloorsToVisit());
+            List<List<Integer>> permutations = permutationsOf(floorsToVisit);
 
             double bestCost = 0;
             double currentCost;
@@ -248,6 +253,43 @@ public class Algorithm {
         return optimum;
     }
 
+    private List<Integer> optimiseUsingMonitoringData(List<Call> floorsToVisit) {
+        //get all hall calls
+        List<Call> hallCalls = floorsToVisit
+                .stream()
+                .filter(x -> x.getCallType() == CallType.HALL)
+                .collect(Collectors.toList());
+
+        System.out.println("HALL CALLS");
+        for(Call c : hallCalls){
+            System.out.print(c.getFloor() + " ");
+        }
+
+        //get latest monitoring data
+        List<FloorData> latestMonitoringData = monitoringData
+                .stream()
+                .sorted((x, y) -> y.getTimestamp().compareTo(x.getTimestamp()))
+                .limit(NO_OF_FLOORS)
+                .collect(Collectors.toList());
+
+        System.out.println();
+        System.out.println("LATEST MONITORING");
+        for(FloorData fd : latestMonitoringData){
+            System.out.print(fd.getFloor() + " " + "("+ fd.getCount() +")");
+        }
+        System.out.println();
+
+        latestMonitoringData
+                .stream()
+                .filter(fd -> fd.getCount() == 0)
+                .forEach(fd -> hallCalls.stream()
+                        .filter(call -> fd.getFloor() == call.getFloor())
+                        .peek(x -> System.out.println("REMOVING FLOOR: " + x.getFloor()))
+                        .forEach(floorsToVisit::remove));
+
+        return floorsToVisit.stream().map(Call::getFloor).collect(Collectors.toList());
+    }
+
     public List<List<Integer>> permutationsOf(List<Integer> list) {
         return permutationsOf(list, 0, list.size());
     }
@@ -257,7 +299,7 @@ public class Algorithm {
         if (start < end) {
             Integer nextInt = list.get(start);
             if (start == end - 1) {
-                permutations.add(Arrays.asList(nextInt));
+                permutations.add(Arrays.asList(nextInt)); //possible memory heap reduction using Collections.singletonList()
             } else {
                 for (List<Integer> subList : permutationsOf(list, start + 1, end)) {
                     for (int i = 0; i <= subList.size(); i++) {

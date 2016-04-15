@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Created by Jamie on 29/12/2015.
+ * Created by Jamie on 06/04/2016.
  */
 public class BasicAlgorithm {
 
@@ -130,7 +130,11 @@ public class BasicAlgorithm {
         List<Integer> optimum = new ArrayList<>();
         if(rd.getFloorsToVisit().size() > 0){
             //look-up bitset in optimum map
-            optimum = rd.getFloorsToVisit().stream().sorted().collect(Collectors.toList());
+
+            optimum = rd.getFloorsToVisit().stream()
+                    .sorted()
+                    .map(Call::getFloor)
+                    .collect(Collectors.toList());
             int current = rd.getCurrentFloor();
             if(current <= optimum.get(0)){
                 //current route is ok
@@ -139,14 +143,33 @@ public class BasicAlgorithm {
                 Collections.reverse(optimum);
             }else if(direction == ElevatorDirection.UP){
                 //get all above it
-                optimum = rd.getFloorsToVisit().stream().sorted().filter(x -> x >= current).collect(Collectors.toList());
+                optimum = rd.getFloorsToVisit().stream()
+                        .sorted()
+                        .filter(x -> x.getFloor() >= current)
+                        .map(Call::getFloor)
+                        .collect(Collectors.toList());
                 direction = ElevatorDirection.DOWN;
-                optimum.addAll(rd.getFloorsToVisit().stream().sorted().filter(x -> x < current).collect(Collectors.toList()));
+                optimum.addAll(rd.getFloorsToVisit()
+                        .stream()
+                        .sorted()
+                        .filter(x -> x.getFloor() < current)
+                        .map(Call::getFloor)
+                        .collect(Collectors.toList()));
             }else{
                 //get all below it
-                optimum = rd.getFloorsToVisit().stream().sorted().filter(x -> x <= current).collect(Collectors.toList());
+                optimum = rd.getFloorsToVisit()
+                        .stream()
+                        .sorted()
+                        .filter(x -> x.getFloor() <= current)
+                        .map(Call::getFloor)
+                        .collect(Collectors.toList());
                 direction = ElevatorDirection.UP;
-                optimum.addAll(rd.getFloorsToVisit().stream().sorted().filter(x -> x > current).collect(Collectors.toList()));
+                optimum.addAll(rd.getFloorsToVisit()
+                        .stream()
+                        .sorted()
+                        .filter(x -> x.getFloor() > current)
+                        .map(Call::getFloor)
+                        .collect(Collectors.toList()));
             }
         }
         return optimum;

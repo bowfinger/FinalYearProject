@@ -3,24 +3,24 @@ import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
-import java.util.Date;
-import java.util.Random;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 
 /**
- * Created by Jamie on 06/01/2016.
+ * Created by Jamie on 10/04/2016.
  */
-public class DummyMonitoringPublisher {
-
+public class DummyCallsPublisher {
     private static final int NO_OF_FLOORS = 8;
     private static final int MAX_WAITING = 22;
+    private List<Integer> floorList = new ArrayList<>();
 
     private Messenger messenger;
     private Timer timer;
     private Random rnd;
 
-    public DummyMonitoringPublisher() throws MqttException {
+    public DummyCallsPublisher() throws MqttException {
+        for(int i = 0; i< NO_OF_FLOORS; i++){
+            floorList.add(i);
+        }
         messenger = new Messenger("", buildCallback());
         timer = new Timer();
         rnd = new Random();
@@ -57,34 +57,17 @@ public class DummyMonitoringPublisher {
                     //connect
                     messenger.connect();
 
-//                    //test call from inside elevator
-//                    int floor = 3;
-//                    FloorData d = new FloorData(floor, timestamp, 5);
-//                    messenger.publish("Call/Floor/" + floor, d);
-//
-//                    floor = 6;
-//                    d = new FloorData(floor, timestamp, 5);
-//                    messenger.publish("Call/Floor/" + floor, d);
-//
-//                    //test call from floors
-//                    floor = 1;
-//                    d = new FloorData(floor, timestamp, 5);
-//                    messenger.publish("Call/Hall/" + floor, d);
-//
-//                    floor = 6;
-//                    d = new FloorData(floor, timestamp, 5);
-//                    messenger.publish("Call/Hall/" + floor, d);
+                    RouteData rd = new RouteData();
 
-                    //generate data for each floor and publish
-                    //dummy monitoring data from the floors
-                    for(int i = 0; i < NO_OF_FLOORS; i++){
-
-                        count = rnd.nextInt(2);//change back to max
-                        FloorData data = new FloorData(i, timestamp, count);
-                        messenger.publish("Monitor/" + i, data);
-
+                    rd.setCurrentFloor(rnd.nextInt(NO_OF_FLOORS));
+                    int noOfCalls = rnd.nextInt(1 + (NO_OF_FLOORS - 1));
+                    Collections.shuffle(floorList);
+                    for (int i = 0; i <= noOfCalls; i++){
+                        CallType rndCallType = rnd.nextInt(2) == 0 ? CallType.HALL : CallType.CAR;
+                        rd.addFloorToVisit(new Call(floorList.get(i), rndCallType));
                     }
 
+                    messenger.publish("RouteList", rd);
                     //disconnect
                     messenger.disconnect();
 

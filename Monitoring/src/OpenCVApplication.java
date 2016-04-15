@@ -11,6 +11,8 @@ public class OpenCVApplication {
     private FrameSupplier supplier;
     private Preprocessor preprocessor;
     private ComputeContours computeContours;
+//    private ComputeContoursDraw computeContoursDraw;
+//    private ScreenOutput screenOut;
     private PackageData packageData;
 
     public OpenCVApplication(int floorId){
@@ -21,6 +23,7 @@ public class OpenCVApplication {
         supplier = new FrameSupplier();
         preprocessor = new Preprocessor();
         computeContours = new ComputeContours();
+        //computeContoursDraw = new ComputeContoursDraw();
         try {
             packageData = new PackageData(floorId);
         } catch (MqttException e) {
@@ -44,5 +47,10 @@ public class OpenCVApplication {
         frameStream.map(preprocessor)
                 .map(computeContours)
                 .forEach(packageData);
+
+        //alternate to show screen output
+//        frameStream.map(preprocessor)
+//                .map(computeContoursDraw)
+//                .forEach(screenOut.mainPanel::display);
     }
 }
